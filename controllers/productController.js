@@ -1,113 +1,111 @@
-const productService = require('../services/productService');
-
-function parseId(req, res) {
-  const id = Number(req.params.id);
-  if (Number.isNaN(id)) {
-    res.status(400).json({ error: 'Invalid id' });
-    return null;
-  }
-  return id;
-}
+const productService = require('../services/productService')
 
 async function getAllProducts(req, res) {
-  try {
-    const products = await productService.getAllProducts();
-    res.json(products);
-  } catch (err) {
-    res.status(500).json({ error: 'Error in reading file' });
-  }
+    try {
+        const products = await productService.getAllProducts()
+        res.json(products)
+    } catch (err) {
+        res.status(500).json({ error: 'Error in reading file' })
+    }
 }
 
 async function getProductById(req, res) {
-  try {
-    const id = parseId(req, res);
-    if (id === null) return;
+    try {
+        const id = Number(req.params.id)
+        if (Number.isNaN(id)) {
+            return res.status(400).json({ error: 'Invalid id' })
+        }
 
-    const product = await productService.getProductById(id);
-    if (!product) {
-      return res.status(404).json({ error: 'Element not found' });
+        const product = await productService.getProductById(id)
+        if (!product) {
+            return res.status(404).json({ error: 'Element not found' })
+        }
+        res.json(product)
+    } catch (err) {
+        res.status(500).json({ error: 'Error in reading file' })
     }
-    res.json(product);
-  } catch (err) {
-    res.status(500).json({ error: 'Error in reading file' });
-  }
 }
 
-async function createProduct(req, res) {
-  try {
-    const { name, price } = req.body;
-    if (!name || price === undefined) {
-      return res.status(400).json({ error: 'name and price are required' });
+async function addProduct(req, res) {
+    try {
+        const { name, price } = req.body
+        if (!name || price === undefined) {
+            return res.status(400).json({ error: 'name and price are required' })
+        }
+
+        const newProduct = await productService.addProduct(name, price)
+        res.status(201).json(newProduct)
+    } catch (err) {
+        res.status(500).json({ error: 'Error in writing file' })
     }
-    const created = await productService.createProduct({ name, price });
-    res.status(201).json(created);
-  } catch (err) {
-    res.status(500).json({ error: 'Error in writing file' });
-  }
 }
 
-// PUT = full replacement
 async function updateProduct(req, res) {
-  try {
-    const id = parseId(req, res);
-    if (id === null) return;
+    try {
+        const id = Number(req.params.id)
+        if (Number.isNaN(id)) {
+            return res.status(400).json({ error: 'Invalid id' })
+        }
 
-    const { name, price } = req.body;
-    if (!name || price === undefined) {
-      return res.status(400).json({ error: 'name and price are required' });
-    }
+        const { name, price } = req.body
+        if (!name || price === undefined) {
+            return res.status(400).json({ error: 'name and price are required' })
+        }
 
-    const updated = await productService.updateProduct(id, { name, price });
-    if (!updated) {
-      return res.status(404).json({ error: 'Element not found' });
+        const product = await productService.updateProduct(id, name, price)
+        if (!product) {
+            return res.status(404).json({ error: 'Element not found' })
+        }
+        res.json(product)
+    } catch (err) {
+        res.status(500).json({ error: 'Error in writing file' })
     }
-    res.json(updated);
-  } catch (err) {
-    res.status(500).json({ error: 'Error in writing file' });
-  }
 }
 
-// PATCH = partial update
 async function patchProduct(req, res) {
-  try {
-    const id = parseId(req, res);
-    if (id === null) return;
+    try {
+        const id = Number(req.params.id)
+        if (Number.isNaN(id)) {
+            return res.status(400).json({ error: 'Invalid id' })
+        }
 
-    const { name, price } = req.body;
-    if (name === undefined && price === undefined) {
-      return res.status(400).json({ error: 'Provide name and/or price' });
-    }
+        const { name, price } = req.body
+        if (name === undefined && price === undefined) {
+            return res.status(400).json({ error: 'Provide name or price' })
+        }
 
-    const updated = await productService.patchProduct(id, { name, price });
-    if (!updated) {
-      return res.status(404).json({ error: 'Element not found' });
+        const product = await productService.patchProduct(id, name, price)
+        if (!product) {
+            return res.status(404).json({ error: 'Element not found' })
+        }
+        res.json(product)
+    } catch (err) {
+        res.status(500).json({ error: 'Error in writing file' })
     }
-    res.json(updated);
-  } catch (err) {
-    res.status(500).json({ error: 'Error in writing file' });
-  }
 }
 
 async function deleteProduct(req, res) {
-  try {
-    const id = parseId(req, res);
-    if (id === null) return;
+    try {
+        const id = Number(req.params.id)
+        if (Number.isNaN(id)) {
+            return res.status(400).json({ error: 'Invalid id' })
+        }
 
-    const deleted = await productService.deleteProduct(id);
-    if (!deleted) {
-      return res.status(404).json({ error: 'Element not found' });
+        const isDeleted = await productService.deleteProduct(id)
+        if (!isDeleted) {
+            return res.status(404).json({ error: 'Element not found' })
+        }
+        res.json({ message: 'Deleted' })
+    } catch (err) {
+        res.status(500).json({ error: 'Error in writing file' })
     }
-    res.status(200).json({ message: 'Deleted' });
-  } catch (err) {
-    res.status(500).json({ error: 'Error in writing file' });
-  }
 }
 
 module.exports = {
-  getAllProducts,
-  getProductById,
-  createProduct,
-  updateProduct,
-  patchProduct,
-  deleteProduct,
-};
+    getAllProducts,
+    getProductById,
+    addProduct,
+    updateProduct,
+    patchProduct,
+    deleteProduct
+}

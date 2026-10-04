@@ -1,45 +1,44 @@
-const TTL = 60 * 1000; // 1 minute
+const ONE_MINUTE = 60 * 1000
 
-// key -> { data, createdAt }
-const cache = new Map();
+let cache = {}
+let version = 0
 
-function cacheMiddleware(req, res, next) {
-  const key = req.originalUrl;
-  const entry = cache.get(key);
+function checkCache(req, res, next) {
+    const key = req.originalUrl
+    const saved = cache[key]
 
-  if (entry) {
-    const age = Date.now() - entry.createdAt;
-    if (age < TTL) {
-      res.set('X-Cache', 'HIT');
-      return res.status(200).json(entry.data);
+    if (saved && Date.now() - saved.time < ONE_MINUTE) {
+        res.set('X-Cache', 'HIT')
+        return res.status(200).json(saved.data)
     }
-    // Expired: do not use it, remove it
-    cache.delete(key);
-  }
 
-  res.set('X-Cache', 'MISS');
-
-  // Intercept res.json so we can store the fresh response in the cache
-  const originalJson = res.json.bind(res);
-  res.json = (body) => {
-    if (res.statusCode === 200) {
-      cache.set(key, { data: body, createdAt: Date.now() });
+    if (saved) {
+        delete cache[key]
     }
-    return originalJson(body);
-  };
 
-  next();
+    res.set('X-Cache', 'MISS')
+
+    const startVersion = version
+    const sendJson = res.json.bind(res)
+
+    res.json = (data) => {
+        if (res.statusCode === 200 && startVersion === version) {
+            cache[key] = { data: data, time: Date.now() }
+        }
+        return sendJson(data)
+    }
+
+    next()
 }
 
-// Used on POST / PUT / PATCH / DELETE.
-// Clears the whole cache only if the request succeeded (2xx).
-function invalidateCache(req, res, next) {
-  res.on('finish', () => {
-    if (res.statusCode >= 200 && res.statusCode < 300) {
-      cache.clear();
-    }
-  });
-  next();
+function clearCache(req, res, next) {
+    res.on('finish', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+            version++
+            cache = {}
+        }
+    })
+    next()
 }
 
-module.exports = { cacheMiddleware, invalidateCache };
+module.exports = { checkCache, clearCache }

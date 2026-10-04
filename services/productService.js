@@ -1,61 +1,76 @@
-const db = require('../database/db');
+const db = require('../database/db')
 
 async function getAllProducts() {
-  return db.readProducts();
+    return await db.getProducts()
 }
 
 async function getProductById(id) {
-  const products = await db.readProducts();
-  return products.find((p) => p.id === id) || null;
+    const products = await db.getProducts()
+    const found = products.find((item) => item.id === id)
+    return found || null
 }
 
-async function createProduct({ name, price }) {
-  const products = await db.readProducts();
-  // max id + 1 (length + 1 can create duplicate ids after a delete)
-  const nextId = products.length ? Math.max(...products.map((p) => p.id)) + 1 : 1;
-  const product = { id: nextId, name, price };
-  products.push(product);
-  await db.writeProducts(products);
-  return product;
+async function addProduct(name, price) {
+    const products = await db.getProducts()
+
+    let newId = 1
+    if (products.length > 0) {
+        newId = Math.max(...products.map((item) => item.id)) + 1
+    }
+
+    const newProduct = { id: newId, name: name, price: price }
+    products.push(newProduct)
+    await db.saveProducts(products)
+    return newProduct
 }
 
-async function updateProduct(id, { name, price }) {
-  const products = await db.readProducts();
-  const index = products.findIndex((p) => p.id === id);
-  if (index === -1) return null;
+async function updateProduct(id, name, price) {
+    const products = await db.getProducts()
+    const index = products.findIndex((item) => item.id === id)
+    if (index === -1) {
+        return null
+    }
 
-  products[index] = { id, name, price };
-  await db.writeProducts(products);
-  return products[index];
+    products[index] = { id: id, name: name, price: price }
+    await db.saveProducts(products)
+    return products[index]
 }
 
-async function patchProduct(id, fields) {
-  const products = await db.readProducts();
-  const index = products.findIndex((p) => p.id === id);
-  if (index === -1) return null;
+async function patchProduct(id, name, price) {
+    const products = await db.getProducts()
+    const index = products.findIndex((item) => item.id === id)
+    if (index === -1) {
+        return null
+    }
 
-  if (fields.name !== undefined) products[index].name = fields.name;
-  if (fields.price !== undefined) products[index].price = fields.price;
+    if (name !== undefined) {
+        products[index].name = name
+    }
+    if (price !== undefined) {
+        products[index].price = price
+    }
 
-  await db.writeProducts(products);
-  return products[index];
+    await db.saveProducts(products)
+    return products[index]
 }
 
 async function deleteProduct(id) {
-  const products = await db.readProducts();
-  const index = products.findIndex((p) => p.id === id);
-  if (index === -1) return false;
+    const products = await db.getProducts()
+    const index = products.findIndex((item) => item.id === id)
+    if (index === -1) {
+        return false
+    }
 
-  products.splice(index, 1);
-  await db.writeProducts(products);
-  return true;
+    products.splice(index, 1)
+    await db.saveProducts(products)
+    return true
 }
 
 module.exports = {
-  getAllProducts,
-  getProductById,
-  createProduct,
-  updateProduct,
-  patchProduct,
-  deleteProduct,
-};
+    getAllProducts,
+    getProductById,
+    addProduct,
+    updateProduct,
+    patchProduct,
+    deleteProduct
+}
